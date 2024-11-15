@@ -1,4 +1,4 @@
-name: Deploy and Train Model on Digital Ocean
+name: Train Model with GitHub Actions
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  deploy:
+  train:
     runs-on: ubuntu-latest
 
     steps:
@@ -15,18 +15,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 2. Configurar SSH
-      - name: Set up SSH
-        uses: webfactory/ssh-agent@v0.5.3
-        with:
-          ssh-private-key: ${{ secrets.DROPLET_SSH_KEY }}
-
-      # 3. Deploy and Train on Droplet
-      - name: Deploy and Train
+      # 2. Configurar Docker
+      - name: Build Docker Image
         run: |
-          ssh root@<DROPLET_IP> << 'EOF'
-          cd /app || { mkdir -p /app && cd /app; }
-          git pull origin main || git clone https://github.com/<your-username>/<your-repo>.git .
           docker build -t marathon-trainer .
-          docker run -v /app/data:/data -v /app/models:/models marathon-trainer
-          EOF
+
+      # 3. Ejecutar el contenedor
+      - name: Run Docker Container
+        run: |
+          docker run -v ${{ github.workspace }}/data:/data -v ${{ github.workspace }}/models:/models marathon-trainer
